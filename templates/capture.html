@@ -6,6 +6,13 @@
 
 {% block section_gradient %}linear-gradient(135deg, #1a1e21 0%, #343a40 25%, #4a5568 50%, #343a40 75%, #1a1e21 100%){% endblock %}
 
+{% block extra_head %}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- Template updated: 2025-06-10-02:20 -->
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <div class="section-header">
@@ -35,17 +42,33 @@
                     </div>
                     
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                        {% if is_running %}
-                        <!-- When running: show Stop and Pause -->
-                        <button type="button" onclick="stopCapture()" class="btn btn-danger" style="font-weight: bold; padding: 10px 20px;">🛑 STOP CAPTURE</button>
-                        <button type="button" onclick="pauseCapture()" class="btn btn-warning">⏸️ Pause</button>
+                        <!-- Primary capture controls - Start and Stop side by side -->
+                        <button type="button" onclick="startCapture()" class="btn" 
+                                style="background: {% if is_running %}#6c757d{% else %}#28a745{% endif %}; font-weight: bold; padding: 10px 20px;" 
+                                {% if is_running %}disabled{% endif %}>
+                            ▶️ START CAPTURE
+                        </button>
+                        
+                        <button type="button" onclick="stopCapture()" class="btn" 
+                                style="background: {% if is_running %}#dc3545{% else %}#6c757d{% endif %}; font-weight: bold; padding: 10px 20px;" 
+                                {% if not is_running %}disabled{% endif %}>
+                            🛑 STOP CAPTURE
+                        </button>
+                        
+                        <!-- Secondary controls -->
+                        <button type="button" onclick="pauseCapture()" class="btn" 
+                                style="background: {% if is_running %}#ffc107{% else %}#6c757d{% endif %};" 
+                                {% if not is_running %}disabled{% endif %}>
+                            ⏸️ Pause
+                        </button>
+                        
+                        <button type="button" onclick="resumeCapture()" class="btn" 
+                                style="background: {% if is_running %}#6c757d{% else %}#17a2b8{% endif %};" 
+                                {% if is_running %}disabled{% endif %}>
+                            ▶️ Resume
+                        </button>
+                        
                         <button type="button" onclick="refreshStats()" class="btn btn-warning">🔄 Refresh Stats</button>
-                        {% else %}
-                        <!-- When stopped: show Start and Resume side by side -->
-                        <button type="button" onclick="startCapture()" class="btn" style="background: #28a745; font-weight: bold; padding: 10px 20px;">▶️ START CAPTURE</button>
-                        <button type="button" onclick="resumeCapture()" class="btn" style="background: #17a2b8;">▶️ Resume</button>
-                        <button type="button" onclick="refreshStats()" class="btn btn-warning">🔄 Refresh Stats</button>
-                        {% endif %}
                     </div>
                     
                     {% if is_running %}
@@ -158,7 +181,15 @@
             </div>
             
             <div class="alert alert-info" style="font-size: 0.9rem;">
-                <strong>Note:</strong> Packet capture requires root privileges. Ensure the application is running with appropriate permissions.
+                <strong>🔒 Root Privileges:</strong> Packet capture requires root privileges. Ensure the application is running with appropriate permissions.
+            </div>
+            
+            <div class="alert alert-warning" style="font-size: 0.9rem; margin-top: 10px;">
+                <strong>⚠️ Capture Limits (Safety Mode):</strong><br>
+                • <strong>Max Packets:</strong> 1,000,000 packets<br>
+                • <strong>Max Data Size:</strong> 5 GB<br>
+                • <strong>Max Runtime:</strong> 1 hour<br>
+                <small>Capture will automatically stop when any limit is reached to prevent disk space issues.</small>
             </div>
         </div>
     </div>

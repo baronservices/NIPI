@@ -30,6 +30,11 @@ class PacketCaptureEngine:
         self.packet_queue = Queue(maxsize=10000)
         self.processor_thread = None
         
+        # Capture limits (prevent disk space issues)
+        self.max_packets = config.get('max_packets', 1000000)  # Max 1M packets
+        self.max_bytes = config.get('max_bytes', 5 * 1024 * 1024 * 1024)  # Max 5GB
+        self.max_runtime_seconds = config.get('max_runtime', 3600)  # Max 1 hour
+        
         # Statistics
         self.stats = {
             'packets_captured': 0,
@@ -115,19 +120,55 @@ class PacketCaptureEngine:
         logger.info("Stopping packet capture...")
         self.is_running = False
         
-        # Wait for threads to finish
-        if self.capture_thread:
-            self.capture_thread.join(timeout=5)
-        if self.processor_thread:
-            self.processor_thread.join(timeout=5)
+        # Wait for threads to finish gracefully
+        if self.capture_thread and self.capture_thread.is_alive():
+            logger.info("Waiting for capture thread to stop...")
+            self.capture_thread.join(timeout=3)
+            
+        if self.processor_thread and self.processor_thread.is_alive():
+            logger.info("Waiting for processor thread to stop...")
+            self.processor_thread.join(timeout=3)
         
-        logger.info("Packet capture stopped")
+        # Force cleanup if threads didn't stop
+        if self.capture_thread and self.capture_thread.is_alive():
+            logger.warning("Capture thread did not stop gracefully")
+        if self.processor_thread and self.processor_thread.is_alive():
+            logger.warning("Processor thread did not stop gracefully")
+            
+        logger.info("Packet capture stopped successfully")
+    
+    def _check_capture_limits(self) -> bool:
+        """Check if capture limits have been reached."""
+        # Check packet count limit
+        if self.stats['packets_captured'] >= self.max_packets:
+            logger.warning(f"Packet limit reached: {self.max_packets}")
+            return True
+        
+        # Check data size limit
+        if self.stats['bytes_captured'] >= self.max_bytes:
+            logger.warning(f"Data size limit reached: {self.max_bytes / 1024 / 1024:.1f}MB")
+            return True
+        
+        # Check runtime limit
+        if self.stats['start_time']:
+            runtime = (datetime.utcnow() - self.stats['start_time']).total_seconds()
+            if runtime >= self.max_runtime_seconds:
+                logger.warning(f"Runtime limit reached: {runtime:.0f} seconds")
+                return True
+        
+        return False
     
     def _capture_packets(self, interface: str, packet_filter: str = None):
         """Internal method to capture packets."""
         try:
             def packet_handler(packet):
                 if not self.is_running:
+                    return
+                
+                # Check capture limits
+                if self._check_capture_limits():
+                    logger.info("Capture limits reached, stopping capture")
+                    self.stop_capture()
                     return
                 
                 try:
@@ -280,9 +321,12 @@ class PacketCaptureEngine:
                 )
                 session.add(packet_record)
                 session.commit()
+                logger.debug(f"Stored packet: {packet_info.get('src_ip')} -> {packet_info.get('dst_ip')}")
                 
         except Exception as e:
             logger.error(f"Error storing packet: {e}")
+            logger.error(f"Packet info: {packet_info}")
+            # Continue without crashing the capture
     
     def _update_flow_session(self, packet_info: Dict[str, Any]):
         """Update or create flow session for packet."""
