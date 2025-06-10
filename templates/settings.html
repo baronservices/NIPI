@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Baron Weather NIPI{% endblock %}
+
+{% block header_gradient %}linear-gradient(135deg, #0f766e 0%, #14b8a6 25%, #20c997 50%, #14b8a6 75%, #0f766e 100%){% endblock %}
+
+{% block page_subtitle %}System Configuration & Settings Management{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">v2.0</div>
+        <div class="stat-label">NIPI Version</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            <span class="status-indicator status-active"></span>Active
+        </div>
+        <div class="stat-label">System Status</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ config.database.retention_days or 30 }}</div>
+        <div class="stat-label">Retention (Days)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ config.app.host or 'localhost' }}:{{ config.app.port or 8080 }}</div>
+        <div class="stat-label">Server Address</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <div class="section-header">
+            <span>🔧 Network Capture Settings</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/settings/capture">
+                <div class="form-group">
+                    <label class="form-label">Default Interface</label>
+                    <select class="form-control" name="interface">
+                        <option value="auto" {% if config.capture.interface == 'auto' %}selected{% endif %}>Auto-detect</option>
+                        <option value="eth0" {% if config.capture.interface == 'eth0' %}selected{% endif %}>eth0</option>
+                        <option value="wlan0" {% if config.capture.interface == 'wlan0' %}selected{% endif %}>wlan0</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Default Filter</label>
+                    <input type="text" class="form-control" name="filter" 
+                           value="{{ config.capture.filter or '' }}" 
+                           placeholder="e.g., tcp port 80 or udp">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Buffer Size (packets)</label>
+                    <input type="number" class="form-control" name="buffer_size" 
+                           value="{{ config.capture.buffer_size or 1000 }}" min="100" max="10000">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" name="promiscuous" 
+                               {% if config.capture.promiscuous %}checked{% endif %}> 
+                        Promiscuous Mode
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn">Save Capture Settings</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="section-header">
+            <span>🗄️ Database Configuration</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/settings/database">
+                <div class="form-group">
+                    <label class="form-label">Data Retention (days)</label>
+                    <input type="number" class="form-control" name="retention_days" 
+                           value="{{ config.database.retention_days or 30 }}" min="1" max="365">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Connection Pool Size</label>
+                    <input type="number" class="form-control" name="pool_size" 
+                           value="{{ config.database.pool_size or 10 }}" min="5" max="50">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Auto-cleanup</label>
+                    <select class="form-control" name="auto_cleanup">
+                        <option value="true" {% if config.database.auto_cleanup %}selected{% endif %}>Enabled</option>
+                        <option value="false" {% if not config.database.auto_cleanup %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Database Type</label>
+                    <select class="form-control" name="type" disabled>
+                        <option value="sqlite" selected>SQLite (Current)</option>
+                        <option value="postgresql">PostgreSQL (Future)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn">Save Database Settings</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <div class="section-header">
+            <span>🛡️ Security & Alerting</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/settings/security">
+                <div class="form-group">
+                    <label class="form-label">Security Monitoring</label>
+                    <select class="form-control" name="monitoring_enabled">
+                        <option value="true" {% if config.security.monitoring_enabled %}selected{% endif %}>Enabled</option>
+                        <option value="false" {% if not config.security.monitoring_enabled %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Alert Threshold (events/hour)</label>
+                    <input type="number" class="form-control" name="alert_threshold" 
+                           value="{{ config.security.alert_threshold or 10 }}" min="1" max="1000">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" name="port_scan_detection" 
+                               {% if config.security.port_scan_detection %}checked{% endif %}> 
+                        Port Scan Detection
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" name="ddos_detection" 
+                               {% if config.security.ddos_detection %}checked{% endif %}> 
+                        DDoS Detection
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn">Save Security Settings</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="section-header">
+            <span>🎛️ Application Settings</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/settings/app">
+                <div class="form-group">
+                    <label class="form-label">Web Server Host</label>
+                    <input type="text" class="form-control" name="host" 
+                           value="{{ config.app.host or '0.0.0.0' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Web Server Port</label>
+                    <input type="number" class="form-control" name="port" 
+                           value="{{ config.app.port or 8080 }}" min="1024" max="65535">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Debug Mode</label>
+                    <select class="form-control" name="debug">
+                        <option value="false" {% if not config.app.debug %}selected{% endif %}>Disabled (Production)</option>
+                        <option value="true" {% if config.app.debug %}selected{% endif %}>Enabled (Development)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Auto-refresh Interval (seconds)</label>
+                    <input type="number" class="form-control" name="refresh_interval" 
+                           value="{{ config.app.refresh_interval or 30 }}" min="5" max="300">
+                </div>
+                
+                <button type="submit" class="btn">Save App Settings</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>📊 System Information</span>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div>
+                <h5>Application Info</h5>
+                <p><strong>NIPI Version:</strong> v2.0</p>
+                <p><strong>Flask Version:</strong> {{ flask_version or 'Unknown' }}</p>
+                <p><strong>SQLAlchemy Version:</strong> {{ sqlalchemy_version or 'Unknown' }}</p>
+                <p><strong>Python Version:</strong> {{ python_version or 'Unknown' }}</p>
+            </div>
+            <div>
+                <h5>Network Interfaces</h5>
+                <ul style="margin-left: 20px;">
+                    <li>eth0 (Ethernet)</li>
+                    <li>lo (Loopback)</li>
+                    <li>wlan0 (Wireless)</li>
+                </ul>
+                <p><strong>Default:</strong> Auto-detect</p>
+            </div>
+            <div>
+                <h5>Database Status</h5>
+                <p><strong>Type:</strong> SQLite</p>
+                <p><strong>Location:</strong> ./network_inventory.db</p>
+                <p><strong>Size:</strong> {{ db_size or 'Unknown' }}</p>
+                <p><strong>Status:</strong> <span class="status-up">Connected</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>⚡ System Actions</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="clearOldData()" class="btn btn-warning">Clear Old Data</button>
+            <button onclick="exportConfig()" class="btn">Export Configuration</button>
+            <button onclick="restartServices()" class="btn btn-danger">Restart Services</button>
+            <a href="/api/packets/recent?limit=100" class="btn" target="_blank">View API</a>
+            <button onclick="location.reload()" class="btn">Refresh Settings</button>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h5>Configuration File Path</h5>
+            <p style="font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px;">
+                /config/config.yaml
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function clearOldData() {
+    if (confirm('Are you sure you want to clear old data? This action cannot be undone.')) {
+        fetch('/api/cleanup/old-data', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Data cleanup completed');
+                location.reload();
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+    }
+}
+
+function exportConfig() {
+    const config = {{ config|tojson }};
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nipi_config_' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function restartServices() {
+    if (confirm('Are you sure you want to restart NIPI services? This will temporarily stop monitoring.')) {
+        fetch('/api/restart', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Services restart initiated');
+                setTimeout(() => location.reload(), 5000);
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+    }
+}
+
+// Handle form submissions
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const action = form.getAttribute('action');
+            
+            fetch(action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Settings saved successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

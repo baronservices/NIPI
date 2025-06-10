@@ -12,8 +12,8 @@ import hashlib
 from scapy.all import sniff, get_if_list, Ether, IP, IPv6, TCP, UDP, ICMP
 from scapy.packet import Packet
 
-from ..database.models import PacketCapture, FlowSession
-from ..database.connection import get_db_session
+from src.database.models import PacketCapture, FlowSession
+from src.database.connection import get_db_session
 
 
 logger = logging.getLogger(__name__)

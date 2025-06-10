@@ -1,0 +1,17 @@
+# NIPI Installation Commands
+
+# Install Python package manager and virtual environment support
+sudo apt update
+sudo apt install python3-pip python3-venv python3-full
+
+# For packet capture capabilities (optional - requires root)
+sudo apt install libpcap-dev
+
+# Then run NIPI installation
+sudo ./install-venv.sh
+
+# Or install Python packages system-wide (not recommended but works)
+sudo pip3 install flask sqlalchemy scapy psutil --break-system-packages
+
+# Start NIPI
+sudo python3 src/main.py

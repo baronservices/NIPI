@@ -15,7 +15,7 @@ import argparse
 
 def populate_default_config():
     """Populate database with default configuration values."""
-    from database.connection import get_db_session
+    from database.connection import db_manager
     
     default_configs = [
         {
@@ -45,18 +45,17 @@ def populate_default_config():
         }
     ]
     
-    with get_db_session() as session:
-        for config in default_configs:
-            existing = session.query(SystemConfig).filter_by(key=config['key']).first()
-            if not existing:
-                new_config = SystemConfig(
-                    key=config['key'],
-                    value=config['value'],
-                    description=config['description']
-                )
-                session.add(new_config)
-        
-        session.commit()
+    if db_manager:
+        with db_manager.get_session() as session:
+            for config in default_configs:
+                existing = session.query(SystemConfig).filter_by(key=config['key']).first()
+                if not existing:
+                    new_config = SystemConfig(
+                        key=config['key'],
+                        value=config['value'],
+                        description=config['description']
+                    )
+                    session.add(new_config)
     
     print("Default configuration values added to database")
 

@@ -2,7 +2,7 @@
 
 {% block title %}Packet Capture Control - Baron Weather NIPI{% endblock %}
 
-{% block header_gradient %}linear-gradient(135deg, #6f42c1 0%, #5a32a3 25%, #7952b3 50%, #5a32a3 75%, #4c2a85 100%){% endblock %}
+{% block header_gradient %}linear-gradient(135deg, #4c1d95 0%, #6d28d9 25%, #8b5cf6 50%, #6d28d9 75%, #4c1d95 100%){% endblock %}
 
 {% block content %}
 <div class="card">
@@ -32,14 +32,29 @@
                         <small style="color: #6c757d;">Berkeley Packet Filter syntax. Leave empty to capture all traffic.</small>
                     </div>
                     
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                         {% if is_running %}
-                        <button type="button" onclick="stopCapture()" class="btn btn-danger">Stop Capture</button>
+                        <!-- When running: show Stop and Pause -->
+                        <button type="button" onclick="stopCapture()" class="btn btn-danger" style="font-weight: bold; padding: 10px 20px;">🛑 STOP CAPTURE</button>
+                        <button type="button" onclick="pauseCapture()" class="btn btn-warning">⏸️ Pause</button>
+                        <button type="button" onclick="refreshStats()" class="btn btn-warning">🔄 Refresh Stats</button>
                         {% else %}
-                        <button type="button" onclick="startCapture()" class="btn">Start Capture</button>
+                        <!-- When stopped: show Start and Resume side by side -->
+                        <button type="button" onclick="startCapture()" class="btn" style="background: #28a745; font-weight: bold; padding: 10px 20px;">▶️ START CAPTURE</button>
+                        <button type="button" onclick="resumeCapture()" class="btn" style="background: #17a2b8;">▶️ Resume</button>
+                        <button type="button" onclick="refreshStats()" class="btn btn-warning">🔄 Refresh Stats</button>
                         {% endif %}
-                        <button type="button" onclick="refreshStats()" class="btn btn-warning">Refresh Stats</button>
                     </div>
+                    
+                    {% if is_running %}
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(220, 53, 69, 0.1); border: 1px solid #dc3545; border-radius: 4px;">
+                        <strong style="color: #dc3545;">⚠️ Emergency Stop:</strong>
+                        <button type="button" onclick="emergencyStopScan()" class="btn btn-danger" style="margin-left: 10px; font-weight: bold;">
+                            🚨 EMERGENCY STOP ALL SCANNING
+                        </button>
+                        <br><small style="color: #6c757d; margin-top: 5px; display: block;">Use emergency stop to immediately terminate all scanning operations</small>
+                    </div>
+                    {% endif %}
                 </form>
             </div>
             
@@ -201,8 +216,74 @@ function stopCapture() {
     });
 }
 
+function pauseCapture() {
+    fetch('/capture/pause', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error pausing capture: ' + error);
+    });
+}
+
+function resumeCapture() {
+    fetch('/capture/resume', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error resuming capture: ' + error);
+    });
+}
+
+function emergencyStopScan() {
+    if (confirm('⚠️ EMERGENCY STOP\n\nThis will immediately terminate ALL scanning operations.\nAre you sure you want to proceed?')) {
+        // Show immediate visual feedback
+        showAlert('warning', '🚨 Emergency stop initiated... Terminating all operations');
+        
+        // Call the stop endpoint with force parameter
+        fetch('/capture/stop', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({'force': true, 'emergency': true})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showAlert('success', '🛑 Emergency stop completed. All scanning operations terminated.');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('error', 'Emergency stop failed: ' + data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('error', '❌ Emergency stop error: ' + error);
+            // Force reload anyway to update UI state
+            setTimeout(() => location.reload(), 2000);
+        });
+    }
+}
+
 function refreshStats() {
-    fetch('/capture/stats')
+    fetch('/capture/stats?v=' + new Date().getTime())
         .then(response => response.json())
         .then(data => {
             document.getElementById('packetsCount').textContent = data.packets_captured || 0;
@@ -228,7 +309,7 @@ function setFilter(filter) {
 }
 
 function loadRecentPackets() {
-    fetch('/api/packets/recent?limit=20')
+    fetch('/api/packets/recent?limit=20&v=' + new Date().getTime())
         .then(response => response.json())
         .then(data => {
             if (data.error) {

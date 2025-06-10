@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Network Analysis - Baron Weather NIPI{% endblock %}
+
+{% block header_gradient %}linear-gradient(135deg, #0a1830 0%, #162B51 25%, #0d6efd 50%, #162B51 75%, #0a1830 100%){% endblock %}
+
+{% block page_subtitle %}Network Traffic Analysis & Protocol Distribution{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ protocol_stats|length or 0 }}</div>
+        <div class="stat-label">Protocols Detected</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ bandwidth_data|length or 0 }}</div>
+        <div class="stat-label">Data Points</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">24h</div>
+        <div class="stat-label">Analysis Period</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            <span class="status-indicator status-active"></span>Live
+        </div>
+        <div class="stat-label">Analysis Status</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <div class="section-header">
+            <span>📊 Protocol Distribution</span>
+        </div>
+        <div class="card-body">
+            {% if protocol_stats %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Protocol</th>
+                        <th>Packet Count</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set total = protocol_stats|sum(attribute='count') %}
+                    {% for protocol in protocol_stats %}
+                    <tr>
+                        <td><strong>{{ protocol.protocol or 'Unknown' }}</strong></td>
+                        <td>{{ protocol.count }}</td>
+                        <td>
+                            {% if total > 0 %}
+                            {{ "%.1f"|format((protocol.count / total) * 100) }}%
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                <strong>No Protocol Data:</strong> Start packet capture to see protocol distribution analysis.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="section-header">
+            <span>📈 Bandwidth Over Time (24h)</span>
+        </div>
+        <div class="card-body">
+            {% if bandwidth_data %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Time Period</th>
+                        <th>Data Transfer</th>
+                        <th>Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in bandwidth_data[:10] %}
+                    <tr>
+                        <td>{{ data.hour.strftime('%H:00') if data.hour else 'Unknown' }}</td>
+                        <td>{{ "%.2f"|format((data.total_bytes or 0) / 1024 / 1024) }} MB</td>
+                        <td>
+                            {% if loop.index0 > 0 and bandwidth_data[loop.index0-1].total_bytes %}
+                                {% set prev = bandwidth_data[loop.index0-1].total_bytes %}
+                                {% if data.total_bytes > prev %}
+                                <span style="color: #28a745;">📈 +{{ "%.1f"|format(((data.total_bytes - prev) / prev) * 100) }}%</span>
+                                {% elif data.total_bytes < prev %}
+                                <span style="color: #dc3545;">📉 -{{ "%.1f"|format(((prev - data.total_bytes) / prev) * 100) }}%</span>
+                                {% else %}
+                                <span style="color: #6c757d;">➡️ Stable</span>
+                                {% endif %}
+                            {% else %}
+                            <span style="color: #6c757d;">➡️ Baseline</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                <strong>No Bandwidth Data:</strong> Enable network monitoring to see bandwidth analysis over time.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>🔍 Network Analysis Insights</span>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div>
+                <h5>Traffic Patterns</h5>
+                {% if protocol_stats %}
+                <p><strong>Most Active Protocol:</strong> 
+                    {% set top_protocol = protocol_stats|sort(attribute='count', reverse=true)|first %}
+                    {{ top_protocol.protocol }} ({{ top_protocol.count }} packets)
+                </p>
+                {% else %}
+                <p>No traffic data available yet.</p>
+                {% endif %}
+            </div>
+            <div>
+                <h5>Bandwidth Utilization</h5>
+                {% if bandwidth_data %}
+                <p><strong>Peak Period:</strong> 
+                    {% set peak = bandwidth_data|sort(attribute='total_bytes', reverse=true)|first %}
+                    {{ peak.hour.strftime('%H:00') if peak.hour else 'Unknown' }}
+                </p>
+                <p><strong>Peak Transfer:</strong> {{ "%.2f"|format((peak.total_bytes or 0) / 1024 / 1024) }} MB</p>
+                {% else %}
+                <p>No bandwidth data available yet.</p>
+                {% endif %}
+            </div>
+            <div>
+                <h5>Analysis Status</h5>
+                <p><strong>Data Collection:</strong> <span class="status-up">Active</span></p>
+                <p><strong>Real-time Analysis:</strong> <span class="status-up">Enabled</span></p>
+                <p><strong>Retention:</strong> 30 days</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>⚡ Quick Actions</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/capture" class="btn">Start Packet Capture</a>
+            <a href="/security" class="btn">Security Analysis</a>
+            <a href="/performance" class="btn">Performance Metrics</a>
+            <button onclick="location.reload()" class="btn btn-warning">Refresh Analysis</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh every 60 seconds for analysis data
+setInterval(() => {
+    location.reload();
+}, 60000);
+</script>
+{% endblock %}

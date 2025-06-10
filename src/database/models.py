@@ -28,8 +28,7 @@ class PacketCapture(Base):
     payload_size = Column(Integer)
     interface = Column(String(50))
     
-    # Relationships
-    flow_sessions = relationship("FlowSession", back_populates="packets")
+    # Relationships will be established through queries, not direct foreign keys
     
     __table_args__ = (
         Index('idx_packet_time_src', 'timestamp', 'src_ip'),
@@ -57,7 +56,6 @@ class FlowSession(Base):
     status = Column(String(20), default='active')  # active, closed, timeout
     
     # Relationships
-    packets = relationship("PacketCapture", back_populates="flow_sessions")
     security_events = relationship("SecurityEvent", back_populates="flow_session")
 
 

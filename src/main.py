@@ -11,8 +11,8 @@ from pathlib import Path
 # Add src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from web.app import NIPIWebApp
-from database.connection import init_database
+from src.web.app import NIPIWebApp
+from src.database.connection import init_database
 
 
 def setup_logging(log_level: str = "INFO"):

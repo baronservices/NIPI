@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>{% block title %}Baron Weather - Network Intelligence Packet Inspector{% endblock %}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -33,7 +36,7 @@
         .header {
             text-align: center;
             padding: 8px 40px;
-            background: {% block header_gradient %}linear-gradient(135deg, #20c997 0%, #17a085 25%, #28a745 50%, #17a085 75%, #138d75 100%){% endblock %};
+            background: {% block header_gradient %}linear-gradient(135deg, #0a1830 0%, #162B51 25%, #0d6efd 50%, #162B51 75%, #0a1830 100%){% endblock %};
             border-radius: 20px;
             margin-bottom: 50px;
             position: relative;
@@ -128,7 +131,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #343a40;
+            background: linear-gradient(135deg, #0a1830 0%, #162B51 25%, #0d6efd 50%, #162B51 75%, #0a1830 100%);
             color: white;
             padding: 12px 16px;
             margin-bottom: 12px;
@@ -168,7 +171,7 @@
         .stat-value {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #20c997;
+            color: #0d6efd;
             margin-bottom: 4px;
         }
         
@@ -181,7 +184,7 @@
         .btn {
             display: inline-block;
             padding: 8px 16px;
-            background: #20c997;
+            background: #0d6efd;
             color: white;
             text-decoration: none;
             border-radius: 4px;
@@ -192,7 +195,7 @@
         }
         
         .btn:hover {
-            background: #17a085;
+            background: #0b5ed7;
             transform: translateY(-1px);
         }
         
@@ -227,9 +230,17 @@
         }
         
         .table th {
-            background: #f8f9fa;
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
             font-weight: 600;
-            color: #495057;
+            color: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .table th:hover {
+            background: #2d3748;
+            cursor: pointer;
         }
         
         .table tr:hover {
@@ -304,6 +315,58 @@
         .status-warning {
             background: #ffc107;
         }
+        
+        /* Network scan result colors that stand out against dark blue theme */
+        .status-up {
+            color: #28a745;
+            font-weight: 600;
+            text-shadow: 0 0 3px #28a745;
+        }
+        
+        .status-down {
+            color: #dc3545;
+            font-weight: 600;
+            text-shadow: 0 0 3px #dc3545;
+        }
+        
+        .port-open {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .port-closed {
+            color: #6c757d;
+        }
+        
+        .security-high {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .security-medium {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .security-low {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid #28a745;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -312,6 +375,7 @@
         <div class="header">
             <div class="header-content">
                 <div class="logo">
+                    <img src="/baron-icon-twitter.jpg?v={{ timestamp() }}" alt="Baron Weather" class="baron-logo-icon" />
                     <div class="logo-text">
                         <div class="logo-baron">BARON</div>
                         <div class="logo-weather">WEATHER</div>
@@ -321,12 +385,13 @@
                 <div class="version">{% block page_subtitle %}Real-time Network Analysis & Security Monitoring{% endblock %}</div>
                 
                 <div class="nav-links">
-                    <a href="/" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}>Dashboard</a>
-                    <a href="/capture" {% if request.endpoint == 'capture' %}class="active"{% endif %}>Packet Capture</a>
-                    <a href="/analysis" {% if request.endpoint == 'analysis' %}class="active"{% endif %}>Analysis</a>
-                    <a href="/security" {% if request.endpoint == 'security' %}class="active"{% endif %}>Security</a>
-                    <a href="/performance" {% if request.endpoint == 'performance' %}class="active"{% endif %}>Performance</a>
-                    <a href="/settings" {% if request.endpoint == 'settings' %}class="active"{% endif %}>Settings</a>
+                    <a href="/index.html" {% if request.endpoint == 'home' %}class="active"{% endif %}>🏠 Home</a>
+                    <a href="/dashboard" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}>📊 Dashboard</a>
+                    <a href="/capture" {% if request.endpoint == 'capture' %}class="active"{% endif %}>📡 Capture</a>
+                    <a href="/analysis" {% if request.endpoint == 'analysis' %}class="active"{% endif %}>📈 Analysis</a>
+                    <a href="/security" {% if request.endpoint == 'security' %}class="active"{% endif %}>🛡️ Security</a>
+                    <a href="/performance" {% if request.endpoint == 'performance' %}class="active"{% endif %}>⚡ Performance</a>
+                    <a href="/settings" {% if request.endpoint == 'settings' %}class="active"{% endif %}>⚙️ Settings</a>
                 </div>
             </div>
         </div>
@@ -335,5 +400,52 @@
     </div>
     
     {% block scripts %}{% endblock %}
+    
+    <script>
+    // Global cache busting for all pages
+    (function() {
+        // Add cache busting to all fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            // Add timestamp to URL for cache busting
+            const separator = url.includes('?') ? '&' : '?';
+            const cacheBustedUrl = url + separator + 'v=' + new Date().getTime();
+            
+            // Add cache busting headers
+            if (!options.headers) {
+                options.headers = {};
+            }
+            options.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+            options.headers['Pragma'] = 'no-cache';
+            
+            return originalFetch(cacheBustedUrl, options);
+        };
+        
+        // Force page reload with cache busting on navigation
+        window.addEventListener('beforeunload', function() {
+            // Clear any cached data
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    names.forEach(function(name) {
+                        caches.delete(name);
+                    });
+                });
+            }
+        });
+        
+        // Add cache busting to all navigation links
+        document.addEventListener('DOMContentLoaded', function() {
+            const links = document.querySelectorAll('a[href^="/"]');
+            links.forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    // Add timestamp to prevent caching
+                    const url = new URL(link.href);
+                    url.searchParams.set('v', new Date().getTime());
+                    link.href = url.toString();
+                });
+            });
+        });
+    })();
+    </script>
 </body>
 </html>

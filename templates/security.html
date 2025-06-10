@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Security Monitoring - Baron Weather NIPI{% endblock %}
+
+{% block header_gradient %}linear-gradient(135deg, #C41E3A 0%, #B21E35 25%, #dc3545 50%, #B21E35 75%, #A01E30 100%){% endblock %}
+
+{% block page_subtitle %}Network Security Monitoring & Threat Detection{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ events|length or 0 }}</div>
+        <div class="stat-label">Security Events</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            {% set critical_events = events|selectattr('severity', 'equalto', 'critical')|list %}
+            {{ critical_events|length or 0 }}
+        </div>
+        <div class="stat-label">Critical Alerts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            {% set high_events = events|selectattr('severity', 'equalto', 'high')|list %}
+            {{ high_events|length or 0 }}
+        </div>
+        <div class="stat-label">High Risk Events</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            <span class="status-indicator status-active"></span>Active
+        </div>
+        <div class="stat-label">Monitoring Status</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <div class="section-header">
+            <span>🔥 Threat Statistics</span>
+        </div>
+        <div class="card-body">
+            {% if threat_stats %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Event Type</th>
+                        <th>Severity</th>
+                        <th>Count</th>
+                        <th>Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in threat_stats %}
+                    <tr>
+                        <td><strong>{{ stat.event_type.replace('_', ' ').title() }}</strong></td>
+                        <td>
+                            {% if stat.severity == 'critical' %}
+                            <span class="security-high">CRITICAL</span>
+                            {% elif stat.severity == 'high' %}
+                            <span class="security-high">HIGH</span>
+                            {% elif stat.severity == 'medium' %}
+                            <span class="security-medium">MEDIUM</span>
+                            {% else %}
+                            <span class="security-low">LOW</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ stat.count }}</td>
+                        <td>
+                            {% if stat.severity in ['critical', 'high'] %}
+                            <span style="color: #dc3545;">🚨 Immediate Action</span>
+                            {% elif stat.severity == 'medium' %}
+                            <span style="color: #ffc107;">⚠️ Monitor Closely</span>
+                            {% else %}
+                            <span style="color: #28a745;">✅ Normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                <strong>No Threat Data:</strong> Security monitoring is active but no threats detected yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="section-header">
+            <span>🛡️ Security Status Overview</span>
+        </div>
+        <div class="card-body">
+            <h5>Protection Status</h5>
+            <p><strong>Threat Detection:</strong> <span class="status-up">Enabled</span></p>
+            <p><strong>Real-time Monitoring:</strong> <span class="status-up">Active</span></p>
+            <p><strong>Alert System:</strong> <span class="status-up">Operational</span></p>
+            
+            <h5 style="margin-top: 20px;">Detection Capabilities</h5>
+            <ul style="margin-left: 20px;">
+                <li>Port Scanning Detection</li>
+                <li>DDoS Attack Monitoring</li>
+                <li>Suspicious Traffic Analysis</li>
+                <li>Failed Authentication Tracking</li>
+                <li>Anomaly Detection</li>
+            </ul>
+            
+            <h5 style="margin-top: 20px;">Response Actions</h5>
+            <ul style="margin-left: 20px;">
+                <li>Real-time Alerting</li>
+                <li>Automatic Logging</li>
+                <li>Traffic Pattern Analysis</li>
+                <li>Incident Documentation</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>📊 Recent Security Events</span>
+    </div>
+    <div class="card-body">
+        {% if events %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Event Type</th>
+                    <th>Severity</th>
+                    <th>Source IP</th>
+                    <th>Target IP</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events[:20] %}
+                <tr>
+                    <td>{{ event.timestamp.strftime('%m/%d %H:%M') if event.timestamp else 'Unknown' }}</td>
+                    <td><strong>{{ event.event_type.replace('_', ' ').title() }}</strong></td>
+                    <td>
+                        {% if event.severity == 'critical' %}
+                        <span class="security-high">CRITICAL</span>
+                        {% elif event.severity == 'high' %}
+                        <span class="security-high">HIGH</span>
+                        {% elif event.severity == 'medium' %}
+                        <span class="security-medium">MEDIUM</span>
+                        {% else %}
+                        <span class="security-low">LOW</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ event.source_ip or 'Unknown' }}</td>
+                    <td>{{ event.target_ip or 'N/A' }}</td>
+                    <td>{{ event.description[:50] + '...' if event.description and event.description|length > 50 else event.description or 'No description' }}</td>
+                    <td>
+                        {% if event.status == 'new' %}
+                        <span style="color: #dc3545;">🚨 New</span>
+                        {% elif event.status == 'investigating' %}
+                        <span style="color: #ffc107;">🔍 Investigating</span>
+                        {% elif event.status == 'resolved' %}
+                        <span style="color: #28a745;">✅ Resolved</span>
+                        {% else %}
+                        <span style="color: #6c757d;">❓ {{ event.status.title() }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="alert alert-info">
+            <strong>No Security Events:</strong> No security events have been detected. This is good news! 
+            Your network appears to be secure, or packet capture needs to be started to begin monitoring.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>⚡ Security Actions</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/capture" class="btn">Enable Monitoring</a>
+            <a href="/analysis" class="btn">Traffic Analysis</a>
+            <a href="/performance" class="btn">Network Performance</a>
+            <button onclick="location.reload()" class="btn btn-warning">Refresh Events</button>
+            <button onclick="exportSecurityReport()" class="btn btn-danger">Export Security Report</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportSecurityReport() {
+    // Create CSV content
+    let csvContent = "Timestamp,Event Type,Severity,Source IP,Target IP,Description,Status\n";
+    
+    // Add data rows (would be populated from actual data)
+    {% for event in events %}
+    csvContent += "{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else 'Unknown' }},";
+    csvContent += "{{ event.event_type.replace(',', ';') }},";
+    csvContent += "{{ event.severity }},";
+    csvContent += "{{ event.source_ip or 'Unknown' }},";
+    csvContent += "{{ event.target_ip or 'N/A' }},";
+    csvContent += "{{ (event.description or 'No description').replace(',', ';') }},";
+    csvContent += "{{ event.status }}\n";
+    {% endfor %}
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nipi_security_report_' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Auto-refresh every 30 seconds for security events
+setInterval(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

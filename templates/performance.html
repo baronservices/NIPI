@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Monitoring - Baron Weather NIPI{% endblock %}
+
+{% block header_gradient %}linear-gradient(135deg, #ea580c 0%, #fb923c 25%, #f97316 50%, #fb923c 75%, #ea580c 100%){% endblock %}
+
+{% block page_subtitle %}Network Performance Monitoring & Metrics Analysis{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ metrics|length or 0 }}</div>
+        <div class="stat-label">Performance Metrics</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            {% if metrics %}
+            {% set avg_latency = metrics|map(attribute='latency')|select|list %}
+            {% if avg_latency %}
+            {{ "%.1f"|format(avg_latency|sum / avg_latency|length) }}ms
+            {% else %}
+            0ms
+            {% endif %}
+            {% else %}
+            0ms
+            {% endif %}
+        </div>
+        <div class="stat-label">Average Latency</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            {% if metrics %}
+            {% set throughputs = metrics|map(attribute='throughput')|select|list %}
+            {% if throughputs %}
+            {{ "%.1f"|format(throughputs|sum / throughputs|length) }}
+            {% else %}
+            0
+            {% endif %}
+            {% else %}
+            0
+            {% endif %}
+        </div>
+        <div class="stat-label">Avg Throughput (Mbps)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">
+            <span class="status-indicator status-active"></span>Live
+        </div>
+        <div class="stat-label">Monitoring Status</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <div class="section-header">
+            <span>📊 Network Performance Metrics</span>
+        </div>
+        <div class="card-body">
+            {% if metrics %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Latency (ms)</th>
+                        <th>Throughput (Mbps)</th>
+                        <th>Packet Loss (%)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for metric in metrics[:20] %}
+                    <tr>
+                        <td>{{ metric.timestamp.strftime('%m/%d %H:%M') if metric.timestamp else 'Unknown' }}</td>
+                        <td>{{ "%.1f"|format(metric.latency or 0) }}</td>
+                        <td>{{ "%.1f"|format(metric.throughput or 0) }}</td>
+                        <td>{{ "%.2f"|format(metric.packet_loss or 0) }}</td>
+                        <td>
+                            {% if metric.packet_loss and metric.packet_loss > 5 %}
+                            <span style="color: #dc3545;">⚠️ High Loss</span>
+                            {% elif metric.latency and metric.latency > 100 %}
+                            <span style="color: #ffc107;">⏱️ High Latency</span>
+                            {% else %}
+                            <span style="color: #28a745;">✅ Good</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                <strong>No Performance Data:</strong> Start network monitoring to see performance metrics and analysis.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="section-header">
+            <span>📈 Performance Trends</span>
+        </div>
+        <div class="card-body">
+            {% if metrics %}
+            <h5>Performance Summary</h5>
+            {% set recent_metrics = metrics[:24] %}
+            {% if recent_metrics %}
+            <p><strong>Last 24h Average Latency:</strong> 
+                {% set latencies = recent_metrics|map(attribute='latency')|select|list %}
+                {% if latencies %}
+                {{ "%.1f"|format(latencies|sum / latencies|length) }}ms
+                {% else %}
+                No data
+                {% endif %}
+            </p>
+            <p><strong>Last 24h Average Throughput:</strong> 
+                {% set throughputs = recent_metrics|map(attribute='throughput')|select|list %}
+                {% if throughputs %}
+                {{ "%.1f"|format(throughputs|sum / throughputs|length) }}Mbps
+                {% else %}
+                No data
+                {% endif %}
+            </p>
+            <p><strong>Peak Throughput:</strong> 
+                {% set max_throughput = recent_metrics|map(attribute='throughput')|select|max %}
+                {{ "%.1f"|format(max_throughput or 0) }}Mbps
+            </p>
+            <p><strong>Minimum Latency:</strong> 
+                {% set min_latency = recent_metrics|map(attribute='latency')|select|min %}
+                {{ "%.1f"|format(min_latency or 0) }}ms
+            </p>
+            {% endif %}
+            
+            <h5 style="margin-top: 20px;">Network Health</h5>
+            <ul style="margin-left: 20px;">
+                <li>Real-time Performance Monitoring</li>
+                <li>Latency & Throughput Analysis</li>
+                <li>Packet Loss Detection</li>
+                <li>Network Quality Assessment</li>
+                <li>Performance Trend Analysis</li>
+            </ul>
+            {% else %}
+            <div class="alert alert-info">
+                <strong>Performance Analysis Ready:</strong> Enable packet capture to start collecting performance metrics.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>🎯 Performance Insights</span>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div>
+                <h5>Network Quality</h5>
+                {% if metrics %}
+                {% set recent = metrics[:5] %}
+                {% set avg_loss = recent|map(attribute='packet_loss')|select|list %}
+                {% if avg_loss and avg_loss|sum / avg_loss|length > 2 %}
+                <p><strong>Status:</strong> <span style="color: #ffc107;">⚠️ Degraded</span></p>
+                <p><strong>Issue:</strong> High packet loss detected</p>
+                {% elif recent and recent|map(attribute='latency')|select|list and (recent|map(attribute='latency')|select|list|sum / recent|map(attribute='latency')|select|list|length) > 50 %}
+                <p><strong>Status:</strong> <span style="color: #ffc107;">⏱️ Slow</span></p>
+                <p><strong>Issue:</strong> High latency detected</p>
+                {% else %}
+                <p><strong>Status:</strong> <span class="status-up">Excellent</span></p>
+                <p><strong>Quality:</strong> Network performing well</p>
+                {% endif %}
+                {% else %}
+                <p><strong>Status:</strong> <span style="color: #6c757d;">Monitoring Starting</span></p>
+                {% endif %}
+            </div>
+            <div>
+                <h5>Monitoring Coverage</h5>
+                <p><strong>Data Collection:</strong> <span class="status-up">Active</span></p>
+                <p><strong>Metrics Retention:</strong> 30 days</p>
+                <p><strong>Update Frequency:</strong> Real-time</p>
+                <p><strong>Alert Threshold:</strong> 100ms latency</p>
+            </div>
+            <div>
+                <h5>System Performance</h5>
+                <p><strong>Capture Engine:</strong> <span class="status-up">Running</span></p>
+                <p><strong>Database:</strong> <span class="status-up">Connected</span></p>
+                <p><strong>Analysis:</strong> <span class="status-up">Active</span></p>
+                <p><strong>Memory Usage:</strong> Optimized</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>⚡ Performance Actions</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/capture" class="btn">Start Monitoring</a>
+            <a href="/analysis" class="btn">Network Analysis</a>
+            <a href="/security" class="btn">Security Check</a>
+            <button onclick="location.reload()" class="btn btn-warning">Refresh Metrics</button>
+            <button onclick="exportPerformanceReport()" class="btn btn-danger">Export Report</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportPerformanceReport() {
+    // Create CSV content
+    let csvContent = "Timestamp,Latency (ms),Throughput (Mbps),Packet Loss (%),Status\n";
+    
+    // Add data rows (would be populated from actual data)
+    {% for metric in metrics %}
+    csvContent += "{{ metric.timestamp.strftime('%Y-%m-%d %H:%M:%S') if metric.timestamp else 'Unknown' }},";
+    csvContent += "{{ metric.latency or 0 }},";
+    csvContent += "{{ metric.throughput or 0 }},";
+    csvContent += "{{ metric.packet_loss or 0 }},";
+    {% if metric.packet_loss and metric.packet_loss > 5 %}
+    csvContent += "High Loss";
+    {% elif metric.latency and metric.latency > 100 %}
+    csvContent += "High Latency";
+    {% else %}
+    csvContent += "Good";
+    {% endif %}
+    csvContent += "\n";
+    {% endfor %}
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nipi_performance_report_' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Auto-refresh every 30 seconds for performance metrics
+setInterval(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

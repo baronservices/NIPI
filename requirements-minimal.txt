@@ -1,0 +1,9 @@
+# Minimal requirements using only standard library where possible
+flask>=2.3.0
+sqlalchemy>=2.0.0
+
+# Note: For full packet capture functionality, install these with pip:
+# scapy>=2.4.5
+# psutil>=5.9.0
+# pandas>=2.0.0
+# numpy>=1.24.0

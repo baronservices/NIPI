@@ -3,16 +3,16 @@
 import os
 import json
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 from sqlalchemy import func, desc
 import yaml
 
-from ..database.connection import init_database, get_db_session
-from ..database.models import (
+from src.database.connection import init_database, get_db_session
+from src.database.models import (
     PacketCapture, FlowSession, NetworkHost, BandwidthStats,
     SecurityEvent, PerformanceMetrics, SystemConfig
 )
-from ..capture.packet_engine import PacketCaptureEngine
+from src.capture.packet_engine import PacketCaptureEngine
 
 
 class NIPIWebApp:
@@ -36,6 +36,24 @@ class NIPIWebApp:
         
         # Register routes
         self._register_routes()
+        
+        # Add cache busting headers to all responses
+        @self.app.after_request
+        def add_cache_busting_headers(response):
+            """Add cache busting headers to prevent browser caching."""
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, public, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            response.headers['Last-Modified'] = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+            response.headers['ETag'] = f'"{hash(datetime.utcnow())}"'
+            return response
+        
+        # Add timestamp function to template context for cache busting
+        @self.app.context_processor
+        def inject_timestamp():
+            """Inject timestamp function for cache busting in templates."""
+            import time
+            return dict(timestamp=lambda: str(int(time.time() * 1000)))
     
     def _load_config(self, config_path: str = None) -> dict:
         """Load application configuration."""
@@ -50,7 +68,28 @@ class NIPIWebApp:
     def _register_routes(self):
         """Register all Flask routes."""
         
+        @self.app.route('/home')
+        @self.app.route('/index.html')
+        def home():
+            """Homepage view."""
+            try:
+                with get_db_session() as session:
+                    # Get active hosts count for homepage
+                    day_ago = datetime.utcnow() - timedelta(days=1)
+                    active_hosts = session.query(NetworkHost).filter(
+                        NetworkHost.last_seen >= day_ago
+                    ).count()
+                    
+                    return render_template('home.html', active_hosts=active_hosts)
+            except Exception as e:
+                return render_template('error.html', error=str(e))
+        
         @self.app.route('/')
+        def root():
+            """Root route - redirect to homepage."""
+            return redirect(url_for('home'))
+        
+        @self.app.route('/dashboard')
         def dashboard():
             """Main dashboard view."""
             try:
@@ -135,6 +174,24 @@ class NIPIWebApp:
             except Exception as e:
                 return jsonify({'status': 'error', 'message': str(e)})
         
+        @self.app.route('/capture/pause', methods=['POST'])
+        def pause_capture():
+            """Pause packet capture."""
+            try:
+                self.capture_engine.pause_capture()
+                return jsonify({'status': 'success', 'message': 'Packet capture paused'})
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': str(e)})
+        
+        @self.app.route('/capture/resume', methods=['POST'])
+        def resume_capture():
+            """Resume packet capture."""
+            try:
+                self.capture_engine.resume_capture()
+                return jsonify({'status': 'success', 'message': 'Packet capture resumed'})
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': str(e)})
+        
         @self.app.route('/capture/stats')
         def capture_stats():
             """Get capture statistics API."""
@@ -209,6 +266,14 @@ class NIPIWebApp:
         def settings():
             """Application settings view."""
             return render_template('settings.html', config=self.config)
+        
+        @self.app.route('/baron-icon-twitter.jpg')
+        def baron_logo():
+            """Serve Baron logo file."""
+            return send_from_directory(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+                'baron-icon-twitter.jpg'
+            )
         
         @self.app.route('/api/packets/recent')
         def api_recent_packets():

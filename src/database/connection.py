@@ -103,10 +103,9 @@ def init_database(config_path: str = None) -> DatabaseManager:
     return db_manager
 
 
-def get_db_session() -> Generator[Session, None, None]:
-    """Get a database session (for dependency injection)."""
+def get_db_session():
+    """Get a database session context manager."""
     if db_manager is None:
         raise RuntimeError("Database not initialized. Call init_database() first.")
     
-    with db_manager.get_session() as session:
-        yield session
+    return db_manager.get_session()
