@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Baron Weather - Network Intelligence Packet Inspector{% endblock %}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            padding: 8px 40px;
+            background: {% block header_gradient %}linear-gradient(135deg, #20c997 0%, #17a085 25%, #28a745 50%, #17a085 75%, #138d75 100%){% endblock %};
+            border-radius: 20px;
+            margin-bottom: 50px;
+            position: relative;
+            overflow: hidden;
+            max-width: 1600px;
+            margin-left: auto;
+            margin-right: auto;
+            color: white;
+        }
+        
+        .header .nav-links {
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .header .nav-links a {
+            display: inline-block;
+            margin: 0 6px;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .header .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .header .nav-links a.active {
+            background: rgba(40, 167, 69, 0.8);
+            border-color: #28a745;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .baron-logo-icon {
+            height: 60px;
+            width: auto;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+            margin-right: 8px;
+        }
+        
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+        }
+        
+        .logo-baron {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .logo-weather {
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: -4px;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .version {
+            font-size: 14px;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #343a40;
+            color: white;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .card-body {
+            padding: 16px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #20c997;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #20c997;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #17a085;
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .table th,
+        .table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #20c997;
+            box-shadow: 0 0 0 2px rgba(32, 201, 151, 0.25);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-active {
+            background: #28a745;
+        }
+        
+        .status-inactive {
+            background: #dc3545;
+        }
+        
+        .status-warning {
+            background: #ffc107;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-text">
+                        <div class="logo-baron">BARON</div>
+                        <div class="logo-weather">WEATHER</div>
+                    </div>
+                </div>
+                <div class="subtitle">Network Intelligence Packet Inspector</div>
+                <div class="version">{% block page_subtitle %}Real-time Network Analysis & Security Monitoring{% endblock %}</div>
+                
+                <div class="nav-links">
+                    <a href="/" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}>Dashboard</a>
+                    <a href="/capture" {% if request.endpoint == 'capture' %}class="active"{% endif %}>Packet Capture</a>
+                    <a href="/analysis" {% if request.endpoint == 'analysis' %}class="active"{% endif %}>Analysis</a>
+                    <a href="/security" {% if request.endpoint == 'security' %}class="active"{% endif %}>Security</a>
+                    <a href="/performance" {% if request.endpoint == 'performance' %}class="active"{% endif %}>Performance</a>
+                    <a href="/settings" {% if request.endpoint == 'settings' %}class="active"{% endif %}>Settings</a>
+                </div>
+            </div>
+        </div>
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

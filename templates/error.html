@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Baron Weather NIPI{% endblock %}
+
+{% block header_gradient %}linear-gradient(135deg, #dc3545 0%, #c82333 25%, #dc3545 50%, #c82333 75%, #bd2130 100%){% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="section-header">
+        <span>⚠️ Application Error</span>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            <h4>An error occurred</h4>
+            <p><strong>Error Details:</strong></p>
+            <pre style="background: #f8f8f8; padding: 10px; border-radius: 4px; overflow-x: auto;">{{ error }}</pre>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h5>Troubleshooting Steps:</h5>
+            <ul>
+                <li>Check that the database is properly initialized</li>
+                <li>Verify network interface permissions (packet capture requires root)</li>
+                <li>Review the application logs for additional details</li>
+                <li>Ensure all required dependencies are installed</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <a href="/" class="btn">Return to Dashboard</a>
+            <a href="/settings" class="btn btn-warning">Check Settings</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

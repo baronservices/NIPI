@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Packet Capture Control - Baron Weather NIPI{% endblock %}
+
+{% block header_gradient %}linear-gradient(135deg, #6f42c1 0%, #5a32a3 25%, #7952b3 50%, #5a32a3 75%, #4c2a85 100%){% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="section-header">
+        <span>📡 Packet Capture Control</span>
+        <span class="status-indicator {% if is_running %}status-active{% else %}status-inactive{% endif %}"></span>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <h4>Capture Configuration</h4>
+                <form id="captureForm">
+                    <div class="form-group">
+                        <label class="form-label">Network Interface</label>
+                        <select class="form-control" name="interface" id="interface">
+                            <option value="auto">Auto-detect</option>
+                            {% for iface in interfaces %}
+                            <option value="{{ iface }}">{{ iface }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Packet Filter (BPF)</label>
+                        <input type="text" class="form-control" name="filter" id="filter" 
+                               placeholder="e.g., tcp port 80, host 192.168.1.1">
+                        <small style="color: #6c757d;">Berkeley Packet Filter syntax. Leave empty to capture all traffic.</small>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        {% if is_running %}
+                        <button type="button" onclick="stopCapture()" class="btn btn-danger">Stop Capture</button>
+                        {% else %}
+                        <button type="button" onclick="startCapture()" class="btn">Start Capture</button>
+                        {% endif %}
+                        <button type="button" onclick="refreshStats()" class="btn btn-warning">Refresh Stats</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div>
+                <h4>Capture Status</h4>
+                <div id="captureStatus">
+                    {% if is_running %}
+                    <div class="alert alert-info">
+                        <strong>🟢 Capture Active</strong><br>
+                        Packets are being captured and analyzed in real-time.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <strong>🔴 Capture Stopped</strong><br>
+                        No packets are currently being captured.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="stats-grid" style="grid-template-columns: 1fr;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="packetsCount">{{ stats.packets_captured or 0 }}</div>
+                        <div class="stat-label">Packets Captured</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="bytesCount">{{ "%.2f"|format((stats.bytes_captured or 0) / 1024 / 1024) }} MB</div>
+                        <div class="stat-label">Data Captured</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="packetsPerSec">{{ "%.1f"|format(stats.packets_per_second or 0) }}</div>
+                        <div class="stat-label">Packets/sec</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <div class="section-header">
+            <span>📈 Capture Statistics</span>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <td><strong>Total Packets Captured:</strong></td>
+                    <td id="totalPackets">{{ stats.packets_captured or 0 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Packets Processed:</strong></td>
+                    <td id="packetsProcessed">{{ stats.packets_processed or 0 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Packets Dropped:</strong></td>
+                    <td id="packetsDropped">{{ stats.packets_dropped or 0 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Active Flows:</strong></td>
+                    <td id="activeFlows">{{ stats.active_flows or 0 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Queue Size:</strong></td>
+                    <td id="queueSize">{{ stats.queue_size or 0 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Runtime:</strong></td>
+                    <td id="runtime">
+                        {% if stats.runtime_seconds %}
+                        {{ "%.0f"|format(stats.runtime_seconds / 60) }} minutes
+                        {% else %}
+                        Not running
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="section-header">
+            <span>⚙️ Advanced Options</span>
+        </div>
+        <div class="card-body">
+            <h5>Common Filters</h5>
+            <div style="margin-bottom: 15px;">
+                <button onclick="setFilter('tcp')" class="btn" style="margin: 2px;">TCP Only</button>
+                <button onclick="setFilter('udp')" class="btn" style="margin: 2px;">UDP Only</button>
+                <button onclick="setFilter('port 80 or port 443')" class="btn" style="margin: 2px;">HTTP/HTTPS</button>
+                <button onclick="setFilter('port 22')" class="btn" style="margin: 2px;">SSH</button>
+                <button onclick="setFilter('icmp')" class="btn" style="margin: 2px;">ICMP</button>
+            </div>
+            
+            <h5>Network Ranges</h5>
+            <div style="margin-bottom: 15px;">
+                <button onclick="setFilter('net 192.168.0.0/16')" class="btn" style="margin: 2px;">Private (192.168.x.x)</button>
+                <button onclick="setFilter('net 10.0.0.0/8')" class="btn" style="margin: 2px;">Private (10.x.x.x)</button>
+                <button onclick="setFilter('not net 192.168.0.0/16 and not net 10.0.0.0/8')" class="btn" style="margin: 2px;">Public IPs</button>
+            </div>
+            
+            <div class="alert alert-info" style="font-size: 0.9rem;">
+                <strong>Note:</strong> Packet capture requires root privileges. Ensure the application is running with appropriate permissions.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <span>📋 Recent Packets</span>
+    </div>
+    <div class="card-body">
+        <div id="recentPackets">
+            <p class="text-muted">Loading recent packets...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function startCapture() {
+    const form = document.getElementById('captureForm');
+    const formData = new FormData(form);
+    
+    fetch('/capture/start', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error starting capture: ' + error);
+    });
+}
+
+function stopCapture() {
+    fetch('/capture/stop', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error stopping capture: ' + error);
+    });
+}
+
+function refreshStats() {
+    fetch('/capture/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('packetsCount').textContent = data.packets_captured || 0;
+            document.getElementById('bytesCount').textContent = ((data.bytes_captured || 0) / 1024 / 1024).toFixed(2) + ' MB';
+            document.getElementById('packetsPerSec').textContent = (data.packets_per_second || 0).toFixed(1);
+            document.getElementById('totalPackets').textContent = data.packets_captured || 0;
+            document.getElementById('packetsProcessed').textContent = data.packets_processed || 0;
+            document.getElementById('packetsDropped').textContent = data.packets_dropped || 0;
+            document.getElementById('activeFlows').textContent = data.active_flows || 0;
+            document.getElementById('queueSize').textContent = data.queue_size || 0;
+            
+            if (data.runtime_seconds) {
+                document.getElementById('runtime').textContent = Math.floor(data.runtime_seconds / 60) + ' minutes';
+            } else {
+                document.getElementById('runtime').textContent = 'Not running';
+            }
+        })
+        .catch(error => console.error('Error refreshing stats:', error));
+}
+
+function setFilter(filter) {
+    document.getElementById('filter').value = filter;
+}
+
+function loadRecentPackets() {
+    fetch('/api/packets/recent?limit=20')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('recentPackets').innerHTML = '<p class="text-muted">Error loading packets: ' + data.error + '</p>';
+                return;
+            }
+            
+            if (data.length === 0) {
+                document.getElementById('recentPackets').innerHTML = '<p class="text-muted">No packets captured yet.</p>';
+                return;
+            }
+            
+            let html = '<table class="table"><thead><tr><th>Time</th><th>Source</th><th>Destination</th><th>Protocol</th><th>Size</th></tr></thead><tbody>';
+            
+            data.forEach(packet => {
+                const time = new Date(packet.timestamp).toLocaleTimeString();
+                const srcPort = packet.src_port ? ':' + packet.src_port : '';
+                const dstPort = packet.dst_port ? ':' + packet.dst_port : '';
+                
+                html += `<tr>
+                    <td>${time}</td>
+                    <td>${packet.src_ip}${srcPort}</td>
+                    <td>${packet.dst_ip}${dstPort}</td>
+                    <td>${packet.protocol}</td>
+                    <td>${packet.packet_size} bytes</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('recentPackets').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('recentPackets').innerHTML = '<p class="text-muted">Error loading packets: ' + error + '</p>';
+        });
+}
+
+function showAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-info' : 'alert-danger';
+    const alertHtml = `<div class="alert ${alertClass}" style="margin-top: 10px;">${message}</div>`;
+    
+    document.getElementById('captureStatus').innerHTML = alertHtml;
+}
+
+// Auto-refresh stats every 5 seconds
+setInterval(refreshStats, 5000);
+
+// Load recent packets on page load
+document.addEventListener('DOMContentLoaded', loadRecentPackets);
+
+// Refresh recent packets every 10 seconds
+setInterval(loadRecentPackets, 10000);
+</script>
+{% endblock %}

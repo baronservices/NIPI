@@ -1,0 +1,71 @@
+# Network Intelligence Packet Inspector Configuration
+
+# Application settings
+app:
+  name: "Network Intelligence Packet Inspector"
+  version: "1.0.0"
+  debug: false
+  host: "0.0.0.0"
+  port: 8080
+
+# Database configuration
+database:
+  type: "sqlite"  # sqlite, postgresql
+  host: "localhost"
+  port: 5432
+  name: "nipi.db"
+  username: ""
+  password: ""
+  path: "data/nipi.db"
+
+# Packet capture settings
+capture:
+  interface: "auto"  # auto-detect or specify interface
+  buffer_size: 1024
+  timeout: 10
+  filter: ""  # Berkeley Packet Filter
+  max_packets: 0  # 0 = unlimited
+  
+# Analysis settings
+analysis:
+  real_time: true
+  batch_size: 1000
+  analysis_interval: 60  # seconds
+  retention_days: 30
+  
+# Security analysis
+security:
+  enable_threat_detection: true
+  suspicious_ports: [22, 23, 135, 139, 445, 1433, 3389]
+  alert_threshold: 100  # packets per minute
+  scan_detection: true
+  
+# Performance monitoring
+performance:
+  enable_bandwidth_monitoring: true
+  top_talkers_count: 10
+  sampling_interval: 30  # seconds
+  
+# Web interface
+web:
+  theme: "dark"
+  refresh_interval: 30  # seconds
+  charts_enabled: true
+  
+# Alerting
+alerts:
+  email_enabled: false
+  webhook_enabled: false
+  log_enabled: true
+  smtp_server: ""
+  smtp_port: 587
+  email_from: ""
+  email_to: []
+  webhook_url: ""
+  
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/nipi.log"
+  max_size: "10MB"
+  backup_count: 5
